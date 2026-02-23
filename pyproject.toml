@@ -11,4 +11,4 @@ dependencies = [
 
 [build-system]
 requires = ["hatchling"]
-build-backend = "hatchling.backends"
+build-backend = "hatchling.build"
