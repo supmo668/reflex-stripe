@@ -1,0 +1,14 @@
+[project]
+name = "reflex-stripe"
+version = "0.1.0"
+description = "Stripe components for Reflex"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "reflex>=0.8.26",
+    "stripe>=12.3.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.backends"
