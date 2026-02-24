@@ -1,0 +1,13 @@
+name: 'Basic CI Checks'
+description: 'Runs basic CI checks (lint and typecheck) without secrets'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run lint
+      run: task lint
+      shell: bash
+
+    - name: Run typecheck
+      run: task typecheck
+      shell: bash

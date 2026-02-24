@@ -1,0 +1,55 @@
+name: Publish
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches: [v*.*.*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.repository == 'supmo668/reflex-stripe' }}
+    environment: deploy
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.6.5"
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check PYPI_TOKEN
+        run: |
+          if [ -z "${{ secrets.PYPI_TOKEN }}" ]; then
+            echo "PYPI_TOKEN is not set"
+            exit 1
+          fi
+
+      - name: Create .env file
+        run: echo "PYPI_TOKEN=${{ secrets.PYPI_TOKEN }}" > .env
+
+      - name: Publish
+        run: task manual-publish
+
+      - name: Publish docs
+        run: task manual-publish-docs

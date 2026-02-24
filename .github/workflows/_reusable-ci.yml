@@ -1,0 +1,55 @@
+name: Reusable CI
+
+on:
+  workflow_call:
+    inputs:
+      checkout_ref:
+        description: 'Git ref to checkout'
+        required: false
+        type: string
+        default: ''
+      checkout_repository:
+        description: 'Repository to checkout (for forks)'
+        required: false
+        type: string
+        default: ''
+      check_type:
+        description: 'Type of checks to run: basic or full'
+        required: true
+        type: string
+      environment:
+        description: 'Environment to use for secrets (only for full checks)'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-versions: ["3.11", "3.12", "3.13"]
+    environment: ${{ inputs.environment || null }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          repository: ${{ inputs.checkout_repository || github.repository }}
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ matrix.python-versions }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Basic Checks
+        if: inputs.check_type == 'basic'
+        uses: ./.github/actions/basic-checks
+
+      - name: Run Full Checks
+        if: inputs.check_type == 'full'
+        uses: ./.github/actions/full-checks
+        with:
+          stripe-publishable-key: ${{ vars.STRIPE_PUBLISHABLE_KEY }}
+          stripe-secret-key: ${{ secrets.STRIPE_SECRET_KEY }}

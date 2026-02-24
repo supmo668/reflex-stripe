@@ -1,0 +1,55 @@
+name: 'Full CI Checks'
+description: 'Runs full CI including integration tests with secrets'
+inputs:
+  stripe-publishable-key:
+    description: 'Stripe publishable key'
+    required: true
+  stripe-secret-key:
+    description: 'Stripe secret key'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check env vars set
+      run: |
+        if [ -z "${{ inputs.stripe-publishable-key }}" ]; then
+          echo "STRIPE_PUBLISHABLE_KEY is not set"
+          exit 1
+        fi
+        if [ -z "${{ inputs.stripe-secret-key }}" ]; then
+          echo "STRIPE_SECRET_KEY is not set"
+          exit 1
+        fi
+      shell: bash
+
+    - name: Create .env
+      run: |
+        echo "STRIPE_PUBLISHABLE_KEY=${{ inputs.stripe-publishable-key }}" >> .env
+        echo "STRIPE_SECRET_KEY=${{ inputs.stripe-secret-key }}" >> .env
+      shell: bash
+
+    - name: DEBUG - check python version
+      run: uv sync && uv run python --version
+      shell: bash
+
+    - name: Run lint
+      run: task lint
+      shell: bash
+
+    - name: Run typecheck
+      run: task typecheck
+      shell: bash
+
+    - name: Initialize Reflex
+      run: uv run reflex init
+      working-directory: stripe_demo
+      shell: bash
+
+    - name: Install playwright
+      run: uv run playwright install chromium
+      shell: bash
+
+    - name: Run tests
+      run: task test
+      shell: bash

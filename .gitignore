@@ -1,0 +1,15 @@
+__pycache__/
+dist/
+*.egg-info/
+*.py[cod]
+.env
+site/
+.states/
+playwright_test_error.png
+.idea
+custom_components/reflex_stripe/*.pyi
+.web/
+.venv/
+.ruff_cache/
+.pytest_cache/
+uv.lock

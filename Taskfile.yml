@@ -1,0 +1,88 @@
+version: "3"
+
+dotenv: [".env"]
+
+tasks:
+  install:
+    cmds:
+      - uv sync --dev
+      - uv run pre-commit install
+
+  run:
+    dir: stripe_demo
+    cmds:
+      - uv run reflex run
+
+  run-docs:
+    cmds:
+      # Use non-default port to not clash with reflex backend
+      - uv run mkdocs serve -a localhost:9000
+
+  test:
+    deps:
+      - task: lint
+      - task: typecheck
+    cmds:
+      - uv sync --dev
+      - uv run playwright install chromium
+      - uv run pytest
+
+  lint:
+    cmds:
+      - uv run ruff check .
+
+  typecheck:
+    cmds:
+      - uv run pyright
+
+  bump-patch:
+    cmds:
+      - uvx hatch version patch
+      - uv lock
+
+  bump-minor:
+    cmds:
+      - uvx hatch version minor
+      - uv lock
+
+  bump-major:
+    cmds:
+      - uvx hatch version major
+      - uv lock
+
+  publish:
+    preconditions:
+      - sh: git status
+    cmds:
+      - git diff --quiet --staged || (echo "There are staged changes. They must be committed first" && exit 1)
+      - git diff --quiet || (echo "There are unstaged changes. They must be committed first." && exit 1)
+
+      - uvx hatch version | xargs -I {} git tag -a v{} -m "Release v{}"
+      - git push --follow-tags
+
+  pre-commit-all:
+    cmds:
+      - uv run pre-commit run --all-files
+
+  pre-commit-update:
+    cmds:
+      - uv run pre-commit autoupdate
+
+  manual-publish:
+    preconditions:
+      # Check environment variable
+      - sh: test -n "$PYPI_TOKEN"
+        msg: "PYPI_TOKEN is not set -- Add PYPI_TOKEN=... to .env file"
+    cmds:
+      - echo "Publishing to PyPI"
+      - uv build
+      - uv publish --token $PYPI_TOKEN
+
+  manual-publish-docs:
+    cmds:
+      - uv run mkdocs gh-deploy --force
+
+  share:
+    desc: Share the component via the reflex library
+    cmds:
+      - uv run reflex component share

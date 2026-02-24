@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
+
+site_name: Reflex Stripe Docs
+site_url: https://supmo668.github.io/reflex-stripe
+repo_url: https://github.com/supmo668/reflex-stripe
+site_description: Documentation for reflex-stripe
+site_author: SyntropyHealth
+copyright: Copyright 2026
+
+nav:
+  - About: about.md
+  - Getting Started: getting_started.md
+
+theme:
+  name: material
+  features:
+    - content.action.edit
+    - navigation.instant
+  palette:
+    - scheme: slate
+      media: "(prefers-color-scheme: dark)"
+      toggle:
+        icon: material/eye
+        name: Switch to light mode
+    - scheme: default
+      media: "(prefers-color-scheme: light)"
+      toggle:
+        icon: material/eye-outline
+        name: Switch to dark mode
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            members_order: source
+            show_symbol_type_heading: true
