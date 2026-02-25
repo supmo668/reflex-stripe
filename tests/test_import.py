@@ -23,16 +23,21 @@ def test_all_exports():
         "ButtonType",
         "EmbeddedCheckout",
         "EmbeddedCheckoutProvider",
+        "ExpressCheckoutBridge",
         "ExpressCheckoutElement",
         "ExpressCheckoutLayout",
         "ExpressCheckoutOptions",
         "PaymentMethods",
         "StripeBase",
         "StripeProvider",
+        "StripeState",
         "Variables",
         "embedded_checkout",
         "embedded_checkout_provider",
         "express_checkout",
+        "express_checkout_bridge",
+        "get_stripe_api_routes",
+        "register_stripe_api",
         "stripe_provider",
     ]
     for name in expected:
@@ -59,3 +64,15 @@ def test_embedded_checkout_classes():
 
     assert EmbeddedCheckoutProvider.tag == "EmbeddedCheckoutProvider"
     assert EmbeddedCheckout.tag == "EmbeddedCheckout"
+
+
+def test_express_checkout_bridge_class():
+    from reflex_stripe.express_checkout import ExpressCheckoutBridge
+
+    assert ExpressCheckoutBridge.tag == "ExpressCheckoutBridge"
+
+
+def test_stripe_state_class():
+    from reflex_stripe.stripe_state import StripeState
+
+    assert issubclass(StripeState, __import__("reflex").State)

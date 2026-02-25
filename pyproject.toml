@@ -28,6 +28,7 @@ dynamic = ["version"]
 dependencies = [
     "reflex>=0.8.0",
     "stripe>=12.0.0,<15.0.0",
+    "httpx>=0.27.0",
 ]
 
 classifiers = [

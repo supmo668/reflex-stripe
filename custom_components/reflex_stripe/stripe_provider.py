@@ -58,9 +58,6 @@ class StripeProvider(StripeBase):
             f'const stripePromise = loadStripe("{self._publishable_key}");'
         ]
 
-    def _get_custom_code(self) -> str:
-        return "\n".join(self.add_custom_code())
-
     @classmethod
     def create(cls, *children, publishable_key: str = "", **props) -> "StripeProvider":
         """Create a StripeProvider component.
@@ -73,11 +70,6 @@ class StripeProvider(StripeBase):
         component = super().create(*children, **props)
         component._publishable_key = publishable_key
         return component
-
-    def _get_vars(self, include_children: bool = True) -> list:
-        """Override to inject the stripe prop as a raw JS variable reference."""
-        vars_list = super()._get_vars(include_children=include_children)
-        return vars_list
 
     def _render(self):
         """Override render to inject stripe={stripePromise} as raw JS reference."""
@@ -111,28 +103,44 @@ class StripeProvider(StripeBase):
 def stripe_provider(
     *children,
     publishable_key: str,
+    secret_key: str | None = None,
     mode: str | None = None,
     amount: int | None = None,
     currency: str | None = None,
     client_secret: str | None = None,
     appearance: Appearance | None = None,
+    return_url: str = "",
     **props,
 ) -> rx.Component:
     """Create a StripeProvider component (factory function).
 
     This is the recommended way to create a StripeProvider. It handles
-    loadStripe initialization and wraps children in the Elements provider.
+    loadStripe initialization, StripeState configuration, and wraps
+    children in the Elements provider.
 
     Args:
         children: Child components to render inside the provider.
         publishable_key: Stripe publishable key (pk_test_... or pk_live_...).
+        secret_key: Stripe secret key for backend API calls (sk_test_... or sk_live_...).
+            Stored server-side only in StripeState._secret_key (ClassVar).
         mode: Payment mode ('payment', 'subscription', 'setup').
         amount: Amount in smallest currency unit (cents).
         currency: Three-letter ISO currency code.
         client_secret: Client secret from PaymentIntent/SetupIntent.
         appearance: Stripe Appearance API configuration.
+        return_url: URL to redirect to after payment. Used by ExpressCheckoutBridge.
         **props: Additional props passed to Elements.
     """
+    from .stripe_state import StripeState
+
+    if secret_key:
+        StripeState._set_secret_key(secret_key)
+
+    if mode and amount and currency:
+        StripeState._set_defaults(
+            amount=amount, currency=currency, return_url=return_url
+        )
+
     return StripeProvider.create(
         *children,
         publishable_key=publishable_key,
