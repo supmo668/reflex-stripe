@@ -28,6 +28,25 @@ def index() -> rx.Component:
                 currency="usd",
             ),
             rx.divider(),
+            rx.heading("Embedded Checkout", size="5"),
+            rx.text(
+                "Stripe-hosted checkout form in an iframe.",
+                color="gray",
+            ),
+            stripe.embedded_checkout_session(
+                publishable_key=os.environ.get("STRIPE_PUBLISHABLE_KEY", ""),
+                secret_key=os.environ.get("STRIPE_SECRET_KEY", ""),
+                line_items=[{
+                    "price_data": {
+                        "currency": "usd",
+                        "product_data": {"name": "Demo Product"},
+                        "unit_amount": 2000,
+                    },
+                    "quantity": 1,
+                }],
+                return_url="/checkout/complete",
+            ),
+            rx.divider(),
             rx.heading("Payment Status", size="5"),
             rx.text(f"Status: {stripe.StripeState.payment_status}"),
             rx.text(f"Error: {stripe.StripeState.error_message}"),

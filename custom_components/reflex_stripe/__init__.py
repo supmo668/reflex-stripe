@@ -3,9 +3,12 @@ __version__ = "0.1.0"
 from .base import StripeBase
 from .embedded_checkout import (
     EmbeddedCheckout,
+    EmbeddedCheckoutBridge,
     EmbeddedCheckoutProvider,
     embedded_checkout,
+    embedded_checkout_bridge,
     embedded_checkout_provider,
+    embedded_checkout_session,
 )
 from .express_checkout import (
     ExpressCheckoutBridge,
@@ -34,6 +37,7 @@ __all__ = [
     "ButtonTheme",
     "ButtonType",
     "EmbeddedCheckout",
+    "EmbeddedCheckoutBridge",
     "EmbeddedCheckoutProvider",
     "ExpressCheckoutBridge",
     "ExpressCheckoutElement",
@@ -45,7 +49,9 @@ __all__ = [
     "StripeState",
     "Variables",
     "embedded_checkout",
+    "embedded_checkout_bridge",
     "embedded_checkout_provider",
+    "embedded_checkout_session",
     "express_checkout",
     "express_checkout_bridge",
     "get_stripe_api_routes",

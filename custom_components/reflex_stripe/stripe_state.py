@@ -1,4 +1,4 @@
-"""StripeState backend state and API endpoint for PaymentIntent management."""
+"""StripeState backend state and API endpoints for PaymentIntent and Checkout Session management."""
 
 import logging
 import os
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class StripeState(rx.State):
     """Backend state for Stripe payment management.
 
-    Manages PaymentIntent creation via the Stripe Python SDK,
+    Manages PaymentIntent and Checkout Session creation via the Stripe Python SDK,
     tracks payment status, and stores client_secret for frontend use.
 
     ClassVars (_secret_key, _stripe_client, etc.) are shared across all
@@ -41,6 +41,7 @@ class StripeState(rx.State):
     _default_amount: ClassVar[int] = 0
     _default_currency: ClassVar[str] = "usd"
     _return_url: ClassVar[str] = ""
+    _default_line_items: ClassVar[list[dict]] = []
 
     @classmethod
     def _set_secret_key(cls, secret_key: str) -> None:
@@ -61,6 +62,18 @@ class StripeState(rx.State):
         cls._default_amount = amount
         cls._default_currency = currency
         cls._return_url = return_url
+
+    @classmethod
+    def _set_checkout_defaults(
+        cls,
+        line_items: list[dict] | None = None,
+        return_url: str = "",
+    ) -> None:
+        """Store default Checkout Session parameters for the API endpoint."""
+        if line_items is not None:
+            cls._default_line_items = line_items
+        if return_url:
+            cls._return_url = return_url
 
     @classmethod
     def _get_client(cls) -> stripe_lib.StripeClient:
@@ -112,6 +125,49 @@ class StripeState(rx.State):
                 self.error_message = str(e)
                 self.payment_status = "failed"
 
+    @rx.event(background=True)
+    async def create_checkout_session(
+        self,
+        line_items: list[dict] | None = None,
+        return_url: str | None = None,
+    ):
+        """Create a Checkout Session and store the client_secret in state.
+
+        Can be called directly as a Reflex event for programmatic use.
+        The JS bridge uses the API endpoint instead (synchronous response needed).
+        """
+        items = line_items or self._default_line_items
+        if not items:
+            async with self:
+                self.error_message = "line_items is required"
+                self.payment_status = "failed"
+            return
+
+        ret_url = return_url or self._return_url or ""
+        try:
+            client = self._get_client()
+            params: dict = {
+                "ui_mode": "embedded",
+                "mode": "payment",
+                "line_items": items,
+            }
+            if ret_url:
+                if "{CHECKOUT_SESSION_ID}" not in ret_url:
+                    sep = "&" if "?" in ret_url else "?"
+                    ret_url = ret_url + sep + "session_id={CHECKOUT_SESSION_ID}"
+                params["return_url"] = ret_url
+            session = await client.v1.checkout.sessions.create_async(params)
+            async with self:
+                self.client_secret = session.client_secret
+                self.payment_status = session.status or "open"
+                self.error_message = ""
+            logger.info("Checkout Session created: %s", session.id)
+        except Exception as e:
+            logger.error("Failed to create Checkout Session: %s", e)
+            async with self:
+                self.error_message = str(e)
+                self.payment_status = "failed"
+
     @rx.event
     def handle_payment_success(self, payment_intent_id: str = ""):
         """Called from JS bridge after successful confirmPayment."""
@@ -153,6 +209,71 @@ async def _create_payment_intent_endpoint(request: Request) -> JSONResponse:
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+async def _create_checkout_session_endpoint(request: Request) -> JSONResponse:
+    """Starlette endpoint for creating Checkout Sessions (embedded mode).
+
+    Called by EmbeddedCheckoutBridge via fetchClientSecret callback.
+    Returns client_secret as JSON for EmbeddedCheckoutProvider.
+    """
+    try:
+        client = StripeState._get_client()
+        items = StripeState._default_line_items
+        if not items:
+            return JSONResponse(
+                {"error": "No line_items configured"}, status_code=400
+            )
+
+        # Build absolute return_url from request origin + configured path
+        return_url = ""
+        if StripeState._return_url:
+            origin = f"{request.url.scheme}://{request.url.netloc}"
+            return_url = origin + StripeState._return_url
+            if "{CHECKOUT_SESSION_ID}" not in return_url:
+                sep = "&" if "?" in return_url else "?"
+                return_url = return_url + sep + "session_id={CHECKOUT_SESSION_ID}"
+
+        params: dict = {
+            "ui_mode": "embedded",
+            "mode": "payment",
+            "line_items": items,
+        }
+        if return_url:
+            params["return_url"] = return_url
+
+        session = await client.v1.checkout.sessions.create_async(params)
+        return JSONResponse({"client_secret": session.client_secret})
+    except Exception as e:
+        logger.error("API: Failed to create Checkout Session: %s", e)
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+async def _get_session_status_endpoint(request: Request) -> JSONResponse:
+    """Starlette endpoint for retrieving Checkout Session status.
+
+    Called by return/success pages to check if payment completed.
+    Expects ?session_id=cs_test_... query parameter.
+    """
+    session_id = request.query_params.get("session_id", "")
+    if not session_id:
+        return JSONResponse(
+            {"error": "session_id query parameter is required"}, status_code=400
+        )
+    try:
+        client = StripeState._get_client()
+        session = await client.v1.checkout.sessions.retrieve_async(session_id)
+        customer_email = None
+        if session.customer_details:
+            customer_email = session.customer_details.email
+        return JSONResponse({
+            "status": session.status,
+            "payment_status": session.payment_status,
+            "customer_email": customer_email,
+        })
+    except Exception as e:
+        logger.error("API: Failed to retrieve session status: %s", e)
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 def get_stripe_api_routes() -> list[Route]:
     """Create Starlette routes for Stripe API endpoints.
 
@@ -164,6 +285,16 @@ def get_stripe_api_routes() -> list[Route]:
             "/api/stripe/create-payment-intent",
             _create_payment_intent_endpoint,
             methods=["POST"],
+        ),
+        Route(
+            "/api/stripe/create-checkout-session",
+            _create_checkout_session_endpoint,
+            methods=["POST"],
+        ),
+        Route(
+            "/api/stripe/session-status",
+            _get_session_status_endpoint,
+            methods=["GET"],
         ),
     ]
 

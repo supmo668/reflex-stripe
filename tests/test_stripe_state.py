@@ -91,6 +91,46 @@ def test_stripe_state_event_handlers():
     from reflex_stripe.stripe_state import StripeState
 
     assert hasattr(StripeState, "create_payment_intent")
+    assert hasattr(StripeState, "create_checkout_session")
     assert hasattr(StripeState, "handle_payment_success")
     assert hasattr(StripeState, "handle_payment_error")
     assert hasattr(StripeState, "reset_payment")
+
+
+def test_set_checkout_defaults():
+    """_set_checkout_defaults stores line_items and return_url."""
+    from reflex_stripe.stripe_state import StripeState
+
+    items = [{"price": "price_xxx", "quantity": 1}]
+    StripeState._set_checkout_defaults(line_items=items, return_url="/return")
+    assert StripeState._default_line_items == items
+    assert StripeState._return_url == "/return"
+
+
+def test_set_checkout_defaults_partial():
+    """_set_checkout_defaults with only line_items doesn't overwrite return_url."""
+    from reflex_stripe.stripe_state import StripeState
+
+    StripeState._return_url = "/existing"
+    items = [{"price": "price_yyy", "quantity": 2}]
+    StripeState._set_checkout_defaults(line_items=items)
+    assert StripeState._default_line_items == items
+    assert StripeState._return_url == "/existing"  # Not overwritten
+
+
+def test_checkout_session_api_routes_exist():
+    """get_stripe_api_routes includes checkout session route."""
+    from reflex_stripe.stripe_state import get_stripe_api_routes
+
+    routes = get_stripe_api_routes()
+    paths = [r.path for r in routes]
+    assert "/api/stripe/create-checkout-session" in paths
+
+
+def test_session_status_route_exists():
+    """get_stripe_api_routes includes session status route."""
+    from reflex_stripe.stripe_state import get_stripe_api_routes
+
+    routes = get_stripe_api_routes()
+    paths = [r.path for r in routes]
+    assert "/api/stripe/session-status" in paths

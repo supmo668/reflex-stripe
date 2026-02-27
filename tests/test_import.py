@@ -22,6 +22,7 @@ def test_all_exports():
         "ButtonTheme",
         "ButtonType",
         "EmbeddedCheckout",
+        "EmbeddedCheckoutBridge",
         "EmbeddedCheckoutProvider",
         "ExpressCheckoutBridge",
         "ExpressCheckoutElement",
@@ -33,7 +34,9 @@ def test_all_exports():
         "StripeState",
         "Variables",
         "embedded_checkout",
+        "embedded_checkout_bridge",
         "embedded_checkout_provider",
+        "embedded_checkout_session",
         "express_checkout",
         "express_checkout_bridge",
         "get_stripe_api_routes",
@@ -70,6 +73,18 @@ def test_express_checkout_bridge_class():
     from reflex_stripe.express_checkout import ExpressCheckoutBridge
 
     assert ExpressCheckoutBridge.tag == "ExpressCheckoutBridge"
+
+
+def test_embedded_checkout_bridge_class():
+    from reflex_stripe.embedded_checkout import EmbeddedCheckoutBridge
+
+    assert EmbeddedCheckoutBridge.tag == "EmbeddedCheckoutBridge"
+
+
+def test_embedded_checkout_session_factory():
+    from reflex_stripe.embedded_checkout import embedded_checkout_session
+
+    assert callable(embedded_checkout_session)
 
 
 def test_stripe_state_class():
