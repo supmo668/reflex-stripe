@@ -208,8 +208,8 @@ The pattern is proven by `reflex-clerk-api` — wrapping React component librari
 | 1 | Project scaffold | Fork repo, setup package structure mirroring reflex-clerk-api (pyproject.toml, Taskfile, mkdocs, CI, .gitmodules update) | complete | - | - | [plan](../plans/reflex-stripe-phase-1-scaffold.plan.md) |
 | 2 | Core components | StripeBase, StripeProvider (Elements wrapper), loadStripe integration, models (Appearance, ExpressCheckoutOptions) | complete | - | 1 | [plan](../plans/reflex-stripe-phase-2-core-components.plan.md) |
 | 3 | StripeState + Express Checkout | StripeState with create_payment_intent(), ExpressCheckoutElement component with onConfirm/onClick/onReady, JS bridge for confirmPayment flow | complete | - | 2 | [plan](../plans/reflex-stripe-phase-3-stripe-state-express.plan.md) |
-| 4 | Embedded Checkout | EmbeddedCheckoutProvider + EmbeddedCheckout components, StripeState.create_checkout_session(), fetchClientSecret bridge | pending | with 3 | 2 | - |
-| 5 | Page helpers + Return page | add_checkout_page(), add_express_checkout_page(), CheckoutReturn component, session status retrieval | pending | - | 3, 4 | - |
+| 4 | Embedded Checkout | EmbeddedCheckoutProvider + EmbeddedCheckout components, StripeState.create_checkout_session(), fetchClientSecret bridge | complete | with 3 | 2 | [plan](../plans/completed/reflex-stripe-phase-4-embedded-checkout.plan.md) |
+| 5 | Page helpers + Return page | add_checkout_page(), add_express_checkout_page(), CheckoutReturn component, session status retrieval | complete | - | 3, 4 | [plan](../plans/completed/reflex-stripe-phase-5-page-helpers.plan.md) |
 | 6 | Demo app | Full demo app with both Express and Embedded checkout flows, test mode, interactive examples | pending | with 7 | 5 | - |
 | 7 | Documentation + CI/CD | MkDocs docs (getting started, component reference), GitHub Actions (CI, publish, deploy), Taskfile tasks | pending | with 6 | 5 | - |
 | 8 | Testing + publish | Playwright E2E tests, PyPI publishing, README, final validation | pending | - | 6, 7 | - |
