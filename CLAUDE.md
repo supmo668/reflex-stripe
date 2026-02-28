@@ -48,7 +48,7 @@ See `.claude/PRPs/prds/reflex-stripe.prd.md` for full PRD.
 | 5 | Page helpers + Return page | COMPLETE |
 | 6 | Demo app | COMPLETE |
 | 7 | Documentation + CI/CD | COMPLETE |
-| 8 | Testing + PyPI publish | PENDING |
+| 8 | Testing + PyPI publish | COMPLETE |
 
 ## Key Conventions
 

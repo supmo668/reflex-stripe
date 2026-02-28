@@ -212,7 +212,7 @@ The pattern is proven by `reflex-clerk-api` — wrapping React component librari
 | 5 | Page helpers + Return page | add_checkout_page(), add_express_checkout_page(), CheckoutReturn component, session status retrieval | complete | - | 3, 4 | [plan](../plans/completed/reflex-stripe-phase-5-page-helpers.plan.md) |
 | 6 | Demo app | Full demo app with both Express and Embedded checkout flows, test mode, interactive examples | complete | with 7 | 5 | - |
 | 7 | Documentation + CI/CD | MkDocs docs (getting started, component reference), GitHub Actions (CI, publish, deploy), Taskfile tasks | complete | with 6 | 5 | - |
-| 8 | Testing + publish | Playwright E2E tests, PyPI publishing, README, final validation | pending | - | 6, 7 | - |
+| 8 | Testing + publish | Playwright E2E tests, PyPI publishing, README, final validation | complete | - | 6, 7 | - |
 
 ### Phase Details
 
