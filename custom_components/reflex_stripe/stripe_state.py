@@ -118,7 +118,7 @@ class StripeState(rx.State):
                 "automatic_payment_methods": {"enabled": True},
             })
             async with self:
-                self.client_secret = intent.client_secret
+                self.client_secret = intent.client_secret or ""
                 self.payment_status = intent.status
                 self.error_message = ""
             logger.info("PaymentIntent created: %s", intent.id)
@@ -159,9 +159,9 @@ class StripeState(rx.State):
                     sep = "&" if "?" in ret_url else "?"
                     ret_url = ret_url + sep + "session_id={CHECKOUT_SESSION_ID}"
                 params["return_url"] = ret_url
-            session = await client.v1.checkout.sessions.create_async(params)
+            session = await client.v1.checkout.sessions.create_async(params)  # type: ignore[arg-type]
             async with self:
-                self.client_secret = session.client_secret
+                self.client_secret = session.client_secret or ""
                 self.payment_status = session.status or "open"
                 self.error_message = ""
             logger.info("Checkout Session created: %s", session.id)
@@ -330,7 +330,7 @@ async def _create_checkout_session_endpoint(request: Request) -> JSONResponse:
         if return_url:
             params["return_url"] = return_url
 
-        session = await client.v1.checkout.sessions.create_async(params)
+        session = await client.v1.checkout.sessions.create_async(params)  # type: ignore[arg-type]
         return JSONResponse({"client_secret": session.client_secret})
     except Exception as e:
         logger.error("API: Failed to create Checkout Session: %s", e)
