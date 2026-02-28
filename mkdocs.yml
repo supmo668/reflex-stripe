@@ -10,6 +10,7 @@ copyright: Copyright 2026
 nav:
   - About: about.md
   - Getting Started: getting_started.md
+  - API Reference: api_reference.md
 
 theme:
   name: material

@@ -46,8 +46,8 @@ See `.claude/PRPs/prds/reflex-stripe.prd.md` for full PRD.
 | 3 | StripeState + Express Checkout | COMPLETE |
 | 4 | Embedded Checkout | COMPLETE |
 | 5 | Page helpers + Return page | COMPLETE |
-| 6 | Demo app | PENDING |
-| 7 | Documentation + CI/CD | PENDING |
+| 6 | Demo app | COMPLETE |
+| 7 | Documentation + CI/CD | COMPLETE |
 | 8 | Testing + PyPI publish | PENDING |
 
 ## Key Conventions
