@@ -1,20 +1,26 @@
 name: Publish
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types:
-      - completed
-    branches: [v*.*.*]
+  push:
+    tags:
+      - "v*.*.*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  ci:
+    uses: ./.github/workflows/_reusable-ci.yml
+    with:
+      check_type: 'full'
+      environment: 'demo'
+    secrets: inherit
+
   deploy:
+    needs: ci
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.repository == 'supmo668/reflex-stripe' }}
+    if: ${{ github.repository == 'supmo668/reflex-stripe' }}
     environment: deploy
     permissions:
       contents: write
