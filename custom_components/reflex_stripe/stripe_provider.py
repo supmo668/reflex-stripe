@@ -75,7 +75,10 @@ class StripeProvider(StripeBase):
         """Override render to inject stripe={stripePromise} as raw JS reference."""
         tag = super()._render(props)
         if self._publishable_key:
-            tag.add_props(stripe=rx.Var("stripePromise"))
+            tag = tag.add_props(stripe=rx.Var("stripePromise"))
+        else:
+            # Stripe Elements requires stripe prop — null is valid (deferred init)
+            tag = tag.add_props(stripe=rx.Var("null"))
         # Build options object from individual props
         options = {}
         if self.mode is not None:
@@ -93,10 +96,10 @@ class StripeProvider(StripeBase):
         if self.loader is not None:
             options["loader"] = self.loader
         if options:
-            tag.add_props(options=options)
+            tag = tag.add_props(options=options)
         # Remove individual props that were merged into options
-        tag.remove_props("mode", "amount", "currency", "client_secret",
-                         "appearance", "locale", "loader")
+        tag = tag.remove_props("mode", "amount", "currency", "client_secret",
+                               "appearance", "locale", "loader")
         return tag
 
 

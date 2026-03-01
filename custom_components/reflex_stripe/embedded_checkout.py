@@ -51,7 +51,9 @@ class EmbeddedCheckoutProvider(StripeBase):
         """Override render to inject stripe={stripePromise} as raw JS reference."""
         tag = super()._render(props)
         if self._publishable_key:
-            tag.add_props(stripe=rx.Var("stripePromise"))
+            tag = tag.add_props(stripe=rx.Var("stripePromise"))
+        else:
+            tag = tag.add_props(stripe=rx.Var("null"))
         return tag
 
 
