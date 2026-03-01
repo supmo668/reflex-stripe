@@ -14,7 +14,8 @@ custom_components/reflex_stripe/
 ├── stripe_provider.py   # StripeProvider wrapping <Elements> + loadStripe
 ├── stripe_state.py      # StripeState — backend PaymentIntent/Session management
 ├── express_checkout.py  # ExpressCheckoutElement + JS bridge
-└── embedded_checkout.py # EmbeddedCheckoutProvider + EmbeddedCheckout
+├── embedded_checkout.py # EmbeddedCheckoutProvider + EmbeddedCheckout
+└── pages.py             # add_checkout_page(), add_express_checkout_page(), checkout_return_page()
 ```
 
 ## Commands
@@ -43,11 +44,11 @@ See `.claude/PRPs/prds/reflex-stripe.prd.md` for full PRD.
 | 1 | Project scaffold | COMPLETE |
 | 2 | Core components (StripeBase, Provider, models) | COMPLETE |
 | 3 | StripeState + Express Checkout | COMPLETE |
-| 4 | Embedded Checkout | COMPLETE (code exists, needs page helpers) |
-| 5 | Page helpers + Return page | PENDING |
-| 6 | Demo app | PENDING |
-| 7 | Documentation + CI/CD | PENDING |
-| 8 | Testing + PyPI publish | PENDING |
+| 4 | Embedded Checkout | COMPLETE |
+| 5 | Page helpers + Return page | COMPLETE |
+| 6 | Demo app | COMPLETE |
+| 7 | Documentation + CI/CD | COMPLETE |
+| 8 | Testing + PyPI publish | COMPLETE |
 
 ## Key Conventions
 

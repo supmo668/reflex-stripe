@@ -106,9 +106,13 @@ def test_express_checkout_options_full():
         phone_number_required=False,
     )
     assert opts.button_height == 50
+    assert opts.button_theme is not None
     assert opts.button_theme.apple_pay == "black"
+    assert opts.button_type is not None
     assert opts.button_type.google_pay == "pay"
+    assert opts.layout is not None
     assert opts.layout.max_rows == 2
+    assert opts.payment_methods is not None
     assert opts.payment_methods.link == "auto"
     assert opts.payment_method_order == ["apple_pay", "google_pay"]
     assert opts.email_required is True

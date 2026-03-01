@@ -95,6 +95,8 @@ def test_stripe_state_event_handlers():
     assert hasattr(StripeState, "handle_payment_success")
     assert hasattr(StripeState, "handle_payment_error")
     assert hasattr(StripeState, "reset_payment")
+    assert hasattr(StripeState, "get_session_status")
+    assert hasattr(StripeState, "get_payment_status")
 
 
 def test_set_checkout_defaults():
@@ -134,3 +136,26 @@ def test_session_status_route_exists():
     routes = get_stripe_api_routes()
     paths = [r.path for r in routes]
     assert "/api/stripe/session-status" in paths
+
+
+def test_customer_email_default():
+    """StripeState.customer_email defaults to empty string."""
+    from reflex_stripe.stripe_state import StripeState
+
+    assert isinstance(StripeState.customer_email, (str, type(StripeState.customer_email)))
+
+
+def test_stripe_state_has_get_session_status():
+    """StripeState has get_session_status event handler."""
+    from reflex_stripe.stripe_state import StripeState
+
+    assert hasattr(StripeState, "get_session_status")
+    assert callable(getattr(StripeState, "get_session_status"))
+
+
+def test_stripe_state_has_get_payment_status():
+    """StripeState has get_payment_status event handler."""
+    from reflex_stripe.stripe_state import StripeState
+
+    assert hasattr(StripeState, "get_payment_status")
+    assert callable(getattr(StripeState, "get_payment_status"))

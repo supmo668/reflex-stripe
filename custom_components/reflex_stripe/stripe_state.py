@@ -34,6 +34,9 @@ class StripeState(rx.State):
     error_message: str = ""
     """Last payment error message, if any."""
 
+    customer_email: str = ""
+    """Customer email from completed Checkout Session, if available."""
+
     # ClassVar — shared across all instances, not persisted per session.
     # NOTE: RUF012 is ignored project-wide in pyproject.toml for ClassVar annotations.
     _secret_key: ClassVar[str | None] = None
@@ -115,7 +118,7 @@ class StripeState(rx.State):
                 "automatic_payment_methods": {"enabled": True},
             })
             async with self:
-                self.client_secret = intent.client_secret
+                self.client_secret = intent.client_secret or ""
                 self.payment_status = intent.status
                 self.error_message = ""
             logger.info("PaymentIntent created: %s", intent.id)
@@ -156,9 +159,9 @@ class StripeState(rx.State):
                     sep = "&" if "?" in ret_url else "?"
                     ret_url = ret_url + sep + "session_id={CHECKOUT_SESSION_ID}"
                 params["return_url"] = ret_url
-            session = await client.v1.checkout.sessions.create_async(params)
+            session = await client.v1.checkout.sessions.create_async(params)  # type: ignore[arg-type]
             async with self:
-                self.client_secret = session.client_secret
+                self.client_secret = session.client_secret or ""
                 self.payment_status = session.status or "open"
                 self.error_message = ""
             logger.info("Checkout Session created: %s", session.id)
@@ -188,6 +191,93 @@ class StripeState(rx.State):
         self.client_secret = ""
         self.payment_status = "idle"
         self.error_message = ""
+        self.customer_email = ""
+
+    @rx.event(background=True)
+    async def get_session_status(self):
+        """Retrieve Checkout Session status from URL query params.
+
+        Reads ``session_id`` from ``self.router.page.params`` and calls the
+        Stripe API to get session status.  Designed as an ``on_load`` handler
+        for Embedded Checkout return pages.
+        """
+        params = self.router.page.params
+        session_id = params.get("session_id", "")
+        if not session_id:
+            return
+
+        try:
+            client = self._get_client()
+            session = await client.v1.checkout.sessions.retrieve_async(session_id)
+            email = ""
+            if session.customer_details:
+                email = session.customer_details.email or ""
+            status = session.status or ""
+            # Map Checkout Session status → payment_status field
+            if status == "complete":
+                mapped = "succeeded"
+            elif status == "expired":
+                mapped = "failed"
+            else:
+                mapped = "idle"
+            async with self:
+                self.payment_status = mapped
+                self.customer_email = email
+                self.error_message = (
+                    "Session expired" if status == "expired" else ""
+                )
+            logger.info("Session %s status: %s", session_id, status)
+        except Exception as e:
+            logger.error("Failed to retrieve session status: %s", e)
+            async with self:
+                self.payment_status = "failed"
+                self.error_message = str(e)
+
+    @rx.event(background=True)
+    async def get_payment_status(self):
+        """Retrieve PaymentIntent status from URL query params.
+
+        Reads ``payment_intent`` from ``self.router.page.params`` and calls
+        the Stripe API to get intent status.  Designed as an ``on_load``
+        handler for Express Checkout return pages.
+        """
+        params = self.router.page.params
+        pi_id = params.get("payment_intent", "")
+        if not pi_id:
+            # Also check redirect_status for a quick signal
+            redirect_status = params.get("redirect_status", "")
+            if redirect_status == "succeeded":
+                async with self:
+                    self.payment_status = "succeeded"
+                    self.error_message = ""
+            return
+
+        try:
+            client = self._get_client()
+            intent = await client.v1.payment_intents.retrieve_async(pi_id)
+            status = intent.status or ""
+            # Map PaymentIntent status → payment_status field
+            if status == "succeeded":
+                mapped = "succeeded"
+            elif status == "processing":
+                mapped = "processing"
+            elif status in ("requires_payment_method", "requires_action"):
+                mapped = "failed"
+            else:
+                mapped = status
+            async with self:
+                self.payment_status = mapped
+                self.error_message = (
+                    "Payment requires another attempt"
+                    if mapped == "failed"
+                    else ""
+                )
+            logger.info("PaymentIntent %s status: %s", pi_id, status)
+        except Exception as e:
+            logger.error("Failed to retrieve payment intent status: %s", e)
+            async with self:
+                self.payment_status = "failed"
+                self.error_message = str(e)
 
 
 async def _create_payment_intent_endpoint(request: Request) -> JSONResponse:
@@ -240,7 +330,7 @@ async def _create_checkout_session_endpoint(request: Request) -> JSONResponse:
         if return_url:
             params["return_url"] = return_url
 
-        session = await client.v1.checkout.sessions.create_async(params)
+        session = await client.v1.checkout.sessions.create_async(params)  # type: ignore[arg-type]
         return JSONResponse({"client_secret": session.client_secret})
     except Exception as e:
         logger.error("API: Failed to create Checkout Session: %s", e)

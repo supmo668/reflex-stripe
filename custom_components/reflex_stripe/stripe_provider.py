@@ -71,9 +71,9 @@ class StripeProvider(StripeBase):
         component._publishable_key = publishable_key
         return component
 
-    def _render(self):
+    def _render(self, props=None):
         """Override render to inject stripe={stripePromise} as raw JS reference."""
-        tag = super()._render()
+        tag = super()._render(props)
         if self._publishable_key:
             tag.add_props(stripe=rx.Var("stripePromise"))
         # Build options object from individual props
