@@ -114,7 +114,14 @@ class EmbeddedCheckoutBridge(rx.Component):
         state_name = StripeState.get_full_name()
 
         if not self._publishable_key:
-            return []
+            # Must still define the component so JSX <EmbeddedCheckoutBridge /> resolves
+            return [
+                """
+function EmbeddedCheckoutBridge({ children, ...props }) {
+  return (<div data-stripe-error="Missing publishable key">{children}</div>);
+}
+"""
+            ]
 
         return [
             f'const stripePromise = loadStripe("{self._publishable_key}");',
