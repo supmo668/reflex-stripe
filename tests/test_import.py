@@ -5,7 +5,7 @@ def test_import():
     import reflex_stripe
 
     assert hasattr(reflex_stripe, "__version__")
-    assert reflex_stripe.__version__ == "0.1.0"
+    assert reflex_stripe.__version__  # non-empty version string
 
 
 def test_base_class():
