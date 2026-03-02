@@ -45,6 +45,7 @@ class StripeState(rx.State):
     _default_currency: ClassVar[str] = "usd"
     _return_url: ClassVar[str] = ""
     _default_line_items: ClassVar[list[dict]] = []
+    _checkout_mode: ClassVar[str] = "payment"
 
     @classmethod
     def _set_secret_key(cls, secret_key: str) -> None:
@@ -59,24 +60,36 @@ class StripeState(rx.State):
         cls,
         amount: int = 0,
         currency: str = "usd",
-        return_url: str = "",
+        return_url: str | None = None,
     ) -> None:
-        """Store default payment parameters for the API endpoint."""
+        """Store default payment parameters for the API endpoint.
+
+        Args:
+            amount: Default amount in smallest currency unit (cents).
+            currency: Three-letter ISO currency code.
+            return_url: Optional return URL. Only overwrites if explicitly provided
+                (non-None). This prevents Express Checkout setup from blanking
+                the return_url set by Embedded Checkout.
+        """
         cls._default_amount = amount
         cls._default_currency = currency
-        cls._return_url = return_url
+        if return_url is not None:
+            cls._return_url = return_url
 
     @classmethod
     def _set_checkout_defaults(
         cls,
         line_items: list[dict] | None = None,
         return_url: str = "",
+        mode: str = "",
     ) -> None:
         """Store default Checkout Session parameters for the API endpoint."""
         if line_items is not None:
             cls._default_line_items = line_items
         if return_url:
             cls._return_url = return_url
+        if mode:
+            cls._checkout_mode = mode
 
     @classmethod
     def _get_client(cls) -> stripe_lib.StripeClient:
@@ -146,19 +159,19 @@ class StripeState(rx.State):
                 self.payment_status = "failed"
             return
 
-        ret_url = return_url or self._return_url or ""
+        ret_url = return_url or self._return_url or "/checkout/return"
         try:
             client = self._get_client()
+            # Stripe requires {CHECKOUT_SESSION_ID} template in return_url
+            if "{CHECKOUT_SESSION_ID}" not in ret_url:
+                sep = "&" if "?" in ret_url else "?"
+                ret_url = ret_url + sep + "session_id={CHECKOUT_SESSION_ID}"
             params: dict = {
                 "ui_mode": "embedded",
-                "mode": "payment",
+                "mode": self._checkout_mode,
                 "line_items": items,
+                "return_url": ret_url,
             }
-            if ret_url:
-                if "{CHECKOUT_SESSION_ID}" not in ret_url:
-                    sep = "&" if "?" in ret_url else "?"
-                    ret_url = ret_url + sep + "session_id={CHECKOUT_SESSION_ID}"
-                params["return_url"] = ret_url
             session = await client.v1.checkout.sessions.create_async(params)  # type: ignore[arg-type]
             async with self:
                 self.client_secret = session.client_secret or ""
@@ -304,31 +317,36 @@ async def _create_checkout_session_endpoint(request: Request) -> JSONResponse:
 
     Called by EmbeddedCheckoutBridge via fetchClientSecret callback.
     Returns client_secret as JSON for EmbeddedCheckoutProvider.
+
+    Stripe requires ``return_url`` for ``ui_mode: embedded`` sessions.
+    The URL is built from the request origin + configured path, falling
+    back to ``/checkout/return`` if no path was explicitly configured.
     """
     try:
         client = StripeState._get_client()
         items = StripeState._default_line_items
         if not items:
             return JSONResponse(
-                {"error": "No line_items configured"}, status_code=400
+                {"error": "No line_items configured. Pass line_items to "
+                 "embedded_checkout_session() or add_checkout_page()."},
+                status_code=400,
             )
 
-        # Build absolute return_url from request origin + configured path
-        return_url = ""
-        if StripeState._return_url:
-            origin = f"{request.url.scheme}://{request.url.netloc}"
-            return_url = origin + StripeState._return_url
-            if "{CHECKOUT_SESSION_ID}" not in return_url:
-                sep = "&" if "?" in return_url else "?"
-                return_url = return_url + sep + "session_id={CHECKOUT_SESSION_ID}"
+        # Build absolute return_url (required by Stripe for embedded mode)
+        origin = f"{request.url.scheme}://{request.url.netloc}"
+        path = StripeState._return_url or "/checkout/return"
+        return_url = origin + path
+        # Stripe requires {CHECKOUT_SESSION_ID} template in return_url
+        if "{CHECKOUT_SESSION_ID}" not in return_url:
+            sep = "&" if "?" in return_url else "?"
+            return_url = return_url + sep + "session_id={CHECKOUT_SESSION_ID}"
 
         params: dict = {
             "ui_mode": "embedded",
-            "mode": "payment",
+            "mode": StripeState._checkout_mode,
             "line_items": items,
+            "return_url": return_url,
         }
-        if return_url:
-            params["return_url"] = return_url
 
         session = await client.v1.checkout.sessions.create_async(params)  # type: ignore[arg-type]
         return JSONResponse({"client_secret": session.client_secret})

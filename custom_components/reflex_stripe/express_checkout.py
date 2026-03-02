@@ -77,7 +77,7 @@ class ExpressCheckoutBridge(rx.Component):
             ],
             "react": ["useCallback", "useContext"],
             "$/utils/context": ["EventLoopContext"],
-            "$/utils/state": ["ReflexEvent"],
+            "$/utils/state": ["ReflexEvent", "getBackendURL"],
         }
 
     def add_custom_code(self) -> list[str]:
@@ -113,9 +113,10 @@ function ExpressCheckoutBridge({{ children, ...props }}) {{
     }}
 
     // Step 2: Create PaymentIntent on server (synchronous fetch)
+    const apiUrl = getBackendURL().href.replace("/ping", "{self._api_url}");
     let clientSecret;
     try {{
-      const res = await fetch("{self._api_url}", {{method: "POST"}});
+      const res = await fetch(apiUrl, {{method: "POST"}});
       const data = await res.json();
       if (data.error) {{
         event.paymentFailed({{reason: "fail", message: data.error}});

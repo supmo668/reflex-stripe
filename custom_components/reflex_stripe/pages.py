@@ -94,6 +94,7 @@ def add_checkout_page(
     publishable_key: str | None = None,
     secret_key: str | None = None,
     line_items: list[dict] | None = None,
+    mode: str = "payment",
     route: str = "/checkout",
     return_route: str = "/checkout/return",
 ) -> None:
@@ -116,6 +117,8 @@ def add_checkout_page(
         secret_key: Stripe secret key. Reads from
             ``STRIPE_SECRET_KEY`` env var if not provided.
         line_items: List of Stripe line item dicts for the Checkout Session.
+        mode: Checkout Session mode: 'payment', 'subscription', or 'setup'.
+            Use 'subscription' for recurring Price IDs.
         route: Route for the checkout page.
         return_route: Route for the return/success page.
     """
@@ -133,6 +136,7 @@ def add_checkout_page(
                 publishable_key=publishable_key,
                 secret_key=secret_key,
                 line_items=line_items,
+                mode=mode,
                 return_url=return_route,
             ),
             align="center",

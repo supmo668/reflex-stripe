@@ -107,7 +107,7 @@ class EmbeddedCheckoutBridge(rx.Component):
             ],
             "react": ["useCallback", "useContext"],
             "$/utils/context": ["EventLoopContext"],
-            "$/utils/state": ["ReflexEvent"],
+            "$/utils/state": ["ReflexEvent", "getBackendURL"],
         }
 
     def add_custom_code(self) -> list[str]:
@@ -132,7 +132,8 @@ function EmbeddedCheckoutBridge({{ children, ...props }}) {{
   const [ addEvents ] = useContext(EventLoopContext);
 
   const fetchClientSecret = useCallback(async () => {{
-    const res = await fetch("{self._api_url}", {{
+    const apiUrl = getBackendURL().href.replace("/ping", "{self._api_url}");
+    const res = await fetch(apiUrl, {{
       method: "POST",
       headers: {{ "Content-Type": "application/json" }},
     }});
@@ -198,6 +199,7 @@ def embedded_checkout_session(
     publishable_key: str,
     secret_key: str | None = None,
     line_items: list[dict] | None = None,
+    mode: str = "payment",
     return_url: str = "/checkout/return",
     **props,
 ) -> rx.Component:
@@ -216,6 +218,8 @@ def embedded_checkout_session(
             Example: [{"price": "price_xxx", "quantity": 1}]
             or [{"price_data": {"currency": "usd", "product_data": {"name": "T-shirt"},
                 "unit_amount": 2000}, "quantity": 1}]
+        mode: Checkout Session mode: 'payment', 'subscription', or 'setup'.
+            Use 'subscription' for recurring Price IDs.
         return_url: Path to redirect to after payment (e.g. "/checkout/return").
         **props: Additional props passed to EmbeddedCheckoutBridge.
     """
@@ -228,6 +232,7 @@ def embedded_checkout_session(
         StripeState._set_checkout_defaults(
             line_items=line_items,
             return_url=return_url,
+            mode=mode,
         )
 
     return EmbeddedCheckoutBridge.create(

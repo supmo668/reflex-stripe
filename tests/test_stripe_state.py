@@ -41,6 +41,16 @@ def test_set_defaults():
     assert StripeState._return_url == "/done"
 
 
+def test_set_defaults_no_overwrite_return_url():
+    """_set_defaults without return_url doesn't blank existing value."""
+    from reflex_stripe.stripe_state import StripeState
+
+    StripeState._return_url = "/checkout/return"
+    StripeState._set_defaults(amount=1099, currency="usd")
+    assert StripeState._default_amount == 1099
+    assert StripeState._return_url == "/checkout/return"  # Preserved
+
+
 def test_get_client_no_key_raises():
     """_get_client without key or env var raises ValueError."""
     from reflex_stripe.stripe_state import StripeState

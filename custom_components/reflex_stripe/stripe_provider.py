@@ -141,7 +141,9 @@ def stripe_provider(
 
     if mode and amount and currency:
         StripeState._set_defaults(
-            amount=amount, currency=currency, return_url=return_url
+            amount=amount,
+            currency=currency,
+            return_url=return_url if return_url else None,
         )
 
     return StripeProvider.create(
