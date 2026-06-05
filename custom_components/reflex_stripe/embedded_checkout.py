@@ -20,7 +20,16 @@ class EmbeddedCheckoutProvider(StripeBase):
     tag = "EmbeddedCheckoutProvider"
 
     # The stripe prop is injected as raw JS via add_custom_code, similar to StripeProvider.
-    # The options (clientSecret or fetchClientSecret) will be handled in Phase 4.
+
+    # `client_secret` is forwarded as ``options.clientSecret`` per Stripe's
+    # React SDK contract — the ``<EmbeddedCheckoutProvider>`` component reads
+    # ``options.clientSecret``, not a flat ``client_secret`` prop. Passing
+    # ``client_secret`` directly produced a runtime
+    # ``TypeError: Cannot read properties of undefined (reading 'clientSecret')``
+    # because the React side dereferenced an undefined ``options`` object.
+    # The ``_render`` override below wraps this prop into the options dict
+    # exactly like ``StripeProvider`` does for ``<Elements>``.
+    client_secret: str | None = None
 
     _publishable_key: str = ""
 
@@ -41,19 +50,37 @@ class EmbeddedCheckoutProvider(StripeBase):
         Args:
             children: Child components (must include EmbeddedCheckout).
             publishable_key: Stripe publishable key.
-            **props: Additional props.
+            **props: Additional props (including ``client_secret``, which is
+                forwarded as ``options.clientSecret`` to the React component).
         """
         component = super().create(*children, **props)
         component._publishable_key = publishable_key
         return component
 
     def _render(self, props=None):
-        """Override render to inject stripe={stripePromise} as raw JS reference."""
+        """Override render to inject stripe={stripePromise} + options.clientSecret.
+
+        Stripe's React ``<EmbeddedCheckoutProvider>`` expects:
+            <EmbeddedCheckoutProvider stripe={...} options={{ clientSecret }} />
+        Without the options wrapper, React dereferences ``options.clientSecret``
+        of ``undefined`` and throws TypeError at mount. Mirrors the same
+        pattern ``StripeProvider`` uses for ``<Elements>``.
+        """
         tag = super()._render(props)
         if self._publishable_key:
             tag = tag.add_props(stripe=rx.Var("stripePromise"))
         else:
             tag = tag.add_props(stripe=rx.Var("null"))
+        # Build options object. Skip when client_secret is None — Stripe will
+        # then fall back to ``fetchClientSecret`` (set by EmbeddedCheckoutBridge)
+        # or render a calm error if neither is set. NEVER pass a flat
+        # ``client_secret`` prop — the React component does not read it.
+        options: dict = {}
+        if self.client_secret is not None:
+            options["clientSecret"] = self.client_secret
+        if options:
+            tag = tag.add_props(options=options)
+        tag = tag.remove_props("client_secret")
         return tag
 
 
