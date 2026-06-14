@@ -54,9 +54,7 @@ class StripeProvider(StripeBase):
     def add_custom_code(self) -> list[str]:
         if not self._publishable_key:
             return []
-        return [
-            f'const stripePromise = loadStripe("{self._publishable_key}");'
-        ]
+        return [f'const stripePromise = loadStripe("{self._publishable_key}");']
 
     @classmethod
     def create(cls, *children, publishable_key: str = "", **props) -> "StripeProvider":
@@ -98,8 +96,15 @@ class StripeProvider(StripeBase):
         if options:
             tag = tag.add_props(options=options)
         # Remove individual props that were merged into options
-        tag = tag.remove_props("mode", "amount", "currency", "client_secret",
-                               "appearance", "locale", "loader")
+        tag = tag.remove_props(
+            "mode",
+            "amount",
+            "currency",
+            "client_secret",
+            "appearance",
+            "locale",
+            "loader",
+        )
         return tag
 
 

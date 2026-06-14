@@ -152,7 +152,9 @@ def test_customer_email_default():
     """StripeState.customer_email defaults to empty string."""
     from reflex_stripe.stripe_state import StripeState
 
-    assert isinstance(StripeState.customer_email, (str, type(StripeState.customer_email)))
+    assert isinstance(
+        StripeState.customer_email, (str, type(StripeState.customer_email))
+    )
 
 
 def test_stripe_state_has_get_session_status():
