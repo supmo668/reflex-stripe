@@ -146,11 +146,31 @@ class StripeState(rx.State):
         self,
         line_items: list[dict] | None = None,
         return_url: str | None = None,
+        *,
+        mode: str | None = None,
+        metadata: dict | None = None,
+        discounts: list[dict] | None = None,
+        client_reference_id: str | None = None,
     ):
         """Create a Checkout Session and store the client_secret in state.
 
         Can be called directly as a Reflex event for programmatic use.
         The JS bridge uses the API endpoint instead (synchronous response needed).
+
+        Keyword-only extras (added 2026-07-21 for the SyntropyHealth intake
+        surface, which needs the Session to carry routing + keying data):
+
+        * ``mode`` — overrides the state-level ``_checkout_mode`` per call.
+        * ``metadata`` — arbitrary Session metadata (e.g. an intake/order id) that
+          webhooks read to route a completed checkout.
+        * ``discounts`` — Stripe discount specs, e.g. ``[{"coupon": "..."}]``.
+        * ``client_reference_id`` — the caller's own user identifier, echoed back
+          on the Session so a webhook can key the purchase to a user.
+
+        All four are OMITTED from the Stripe call when falsy rather than sent as
+        ``None`` — the API rejects nulls for these fields. Every argument is
+        keyword-only and optional, so existing two-argument callers are
+        unaffected.
         """
         items = line_items or self._default_line_items
         if not items:
@@ -168,10 +188,17 @@ class StripeState(rx.State):
                 ret_url = ret_url + sep + "session_id={CHECKOUT_SESSION_ID}"
             params: dict = {
                 "ui_mode": "embedded",
-                "mode": self._checkout_mode,
+                "mode": mode or self._checkout_mode,
                 "line_items": items,
                 "return_url": ret_url,
             }
+            # Omit-when-falsy: Stripe rejects null for these optional fields.
+            if metadata:
+                params["metadata"] = metadata
+            if discounts:
+                params["discounts"] = discounts
+            if client_reference_id:
+                params["client_reference_id"] = client_reference_id
             session = await client.v1.checkout.sessions.create_async(params)  # type: ignore[arg-type]
             async with self:
                 self.client_secret = session.client_secret or ""
