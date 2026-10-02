@@ -70,7 +70,7 @@ class ExpressCheckoutBridge(rx.Component):
 
     def add_imports(self) -> rx.ImportDict:
         return {
-            "@stripe/react-stripe-js": [
+            "@stripe/react-stripe-js@7.0.0": [
                 "useStripe",
                 "useElements",
                 "ExpressCheckoutElement",

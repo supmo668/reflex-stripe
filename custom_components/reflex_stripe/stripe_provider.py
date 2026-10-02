@@ -49,7 +49,7 @@ class StripeProvider(StripeBase):
     _publishable_key: str = ""
 
     def add_imports(self) -> rx.ImportDict:
-        return {"@stripe/stripe-js": ["loadStripe"]}
+        return {"@stripe/stripe-js@10.0.0": ["loadStripe"]}
 
     def add_custom_code(self) -> list[str]:
         if not self._publishable_key:

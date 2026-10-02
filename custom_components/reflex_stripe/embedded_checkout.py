@@ -56,8 +56,8 @@ class EmbeddedCheckoutProvider(rx.Component):
 
     def add_imports(self) -> rx.ImportDict:
         return {
-            "@stripe/stripe-js": ["loadStripe"],
-            "@stripe/react-stripe-js": [
+            "@stripe/stripe-js@10.0.0": ["loadStripe"],
+            "@stripe/react-stripe-js@7.0.0": [
                 "EmbeddedCheckoutProvider",
                 "EmbeddedCheckout",
             ],
@@ -173,8 +173,8 @@ class EmbeddedCheckoutBridge(rx.Component):
 
     def add_imports(self) -> rx.ImportDict:
         return {
-            "@stripe/stripe-js": ["loadStripe"],
-            "@stripe/react-stripe-js": [
+            "@stripe/stripe-js@10.0.0": ["loadStripe"],
+            "@stripe/react-stripe-js@7.0.0": [
                 "EmbeddedCheckoutProvider",
                 "EmbeddedCheckout",
             ],
