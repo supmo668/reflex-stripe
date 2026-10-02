@@ -125,11 +125,13 @@ class StripeState(rx.State):
 
         try:
             client = self._get_client()
-            intent = await client.v1.payment_intents.create_async({
-                "amount": amt,
-                "currency": cur,
-                "automatic_payment_methods": {"enabled": True},
-            })
+            intent = await client.v1.payment_intents.create_async(
+                {
+                    "amount": amt,
+                    "currency": cur,
+                    "automatic_payment_methods": {"enabled": True},
+                }
+            )
             async with self:
                 self.client_secret = intent.client_secret or ""
                 self.payment_status = intent.status
@@ -236,9 +238,7 @@ class StripeState(rx.State):
             async with self:
                 self.payment_status = mapped
                 self.customer_email = email
-                self.error_message = (
-                    "Session expired" if status == "expired" else ""
-                )
+                self.error_message = "Session expired" if status == "expired" else ""
             logger.info("Session %s status: %s", session_id, status)
         except Exception as e:
             logger.error("Failed to retrieve session status: %s", e)
@@ -281,9 +281,7 @@ class StripeState(rx.State):
             async with self:
                 self.payment_status = mapped
                 self.error_message = (
-                    "Payment requires another attempt"
-                    if mapped == "failed"
-                    else ""
+                    "Payment requires another attempt" if mapped == "failed" else ""
                 )
             logger.info("PaymentIntent %s status: %s", pi_id, status)
         except Exception as e:
@@ -301,11 +299,13 @@ async def _create_payment_intent_endpoint(request: Request) -> JSONResponse:
     """
     try:
         client = StripeState._get_client()
-        intent = await client.v1.payment_intents.create_async({
-            "amount": StripeState._default_amount,
-            "currency": StripeState._default_currency,
-            "automatic_payment_methods": {"enabled": True},
-        })
+        intent = await client.v1.payment_intents.create_async(
+            {
+                "amount": StripeState._default_amount,
+                "currency": StripeState._default_currency,
+                "automatic_payment_methods": {"enabled": True},
+            }
+        )
         return JSONResponse({"client_secret": intent.client_secret})
     except Exception as e:
         logger.error("API: Failed to create PaymentIntent: %s", e)
@@ -327,8 +327,10 @@ async def _create_checkout_session_endpoint(request: Request) -> JSONResponse:
         items = StripeState._default_line_items
         if not items:
             return JSONResponse(
-                {"error": "No line_items configured. Pass line_items to "
-                 "embedded_checkout_session() or add_checkout_page()."},
+                {
+                    "error": "No line_items configured. Pass line_items to "
+                    "embedded_checkout_session() or add_checkout_page()."
+                },
                 status_code=400,
             )
 
@@ -372,11 +374,13 @@ async def _get_session_status_endpoint(request: Request) -> JSONResponse:
         customer_email = None
         if session.customer_details:
             customer_email = session.customer_details.email
-        return JSONResponse({
-            "status": session.status,
-            "payment_status": session.payment_status,
-            "customer_email": customer_email,
-        })
+        return JSONResponse(
+            {
+                "status": session.status,
+                "payment_status": session.payment_status,
+                "customer_email": customer_email,
+            }
+        )
     except Exception as e:
         logger.error("API: Failed to retrieve session status: %s", e)
         return JSONResponse({"error": str(e)}, status_code=500)

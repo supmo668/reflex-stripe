@@ -20,7 +20,7 @@ EXACT = re.compile(r"^@stripe/(react-)?stripe-js@\d+\.\d+\.\d+$")
 # Any @stripe/* npm spec used as code (dict key, library=, lib_dependencies) —
 # docstring mentions are wrapped in ``double backticks`` and skipped.
 SPEC = re.compile(r'"(@stripe/(?:react-)?stripe-js(?:@[^"]*)?)"')
-DOC_CODE = re.compile(r"``.*?``", re.S)
+DOC_CODE = re.compile(r"``.*?``", re.DOTALL)
 
 
 def _specs() -> list[tuple[str, str]]:
