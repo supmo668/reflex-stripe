@@ -11,7 +11,7 @@ def test_import():
 def test_base_class():
     from reflex_stripe.base import StripeBase
 
-    assert StripeBase.library == "@stripe/react-stripe-js@^5.6.0"
+    assert StripeBase.library == "@stripe/react-stripe-js@7.0.0"
 
 
 def test_all_exports():

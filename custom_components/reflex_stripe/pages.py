@@ -123,7 +123,9 @@ def add_checkout_page(
         return_route: Route for the return/success page.
     """
     assert route.startswith("/"), f"route must start with '/': {route}"
-    assert return_route.startswith("/"), f"return_route must start with '/': {return_route}"
+    assert return_route.startswith("/"), (
+        f"return_route must start with '/': {return_route}"
+    )
 
     publishable_key = publishable_key or os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
     secret_key = secret_key or os.environ.get("STRIPE_SECRET_KEY", "")
@@ -185,7 +187,9 @@ def add_express_checkout_page(
         return_route: Route for the return/success page.
     """
     assert route.startswith("/"), f"route must start with '/': {route}"
-    assert return_route.startswith("/"), f"return_route must start with '/': {return_route}"
+    assert return_route.startswith("/"), (
+        f"return_route must start with '/': {return_route}"
+    )
 
     publishable_key = publishable_key or os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
     secret_key = secret_key or os.environ.get("STRIPE_SECRET_KEY", "")
