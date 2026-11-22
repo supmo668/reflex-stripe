@@ -104,6 +104,17 @@ app = rx.App()
 stripe.register_stripe_api(app)
 ```
 
+## Loading Stripe.js
+
+Stripe.js is requested the first time a Stripe component renders
+(`stripe_provider`, `embedded_checkout_session`, `embedded_checkout_provider`
+once it has a client secret), not when a page module is imported, so pages
+without a Stripe component do not download it. The trade-off: Stripe
+recommends loading Stripe.js on every page so its fraud signals can observe
+the whole visit. An app that wants that behaviour can import the default
+`@stripe/stripe-js` entry (which loads the script as an import side effect)
+from its own root component.
+
 ## Architecture
 
 ```

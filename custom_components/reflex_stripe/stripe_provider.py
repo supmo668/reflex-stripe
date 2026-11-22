@@ -2,7 +2,14 @@
 
 import reflex as rx
 
-from .base import StripeBase
+from .base import (
+    INSTALL_ONLY,
+    LOAD_STRIPE,
+    STRIPE_JS_PURE,
+    STRIPE_LOADER_JS,
+    StripeBase,
+    stripe_promise_js,
+)
 from .models import Appearance
 
 
@@ -18,8 +25,11 @@ class StripeProvider(StripeBase):
 
     tag = "Elements"
 
-    # The stripe prop is injected as a raw JS variable reference via add_custom_code.
-    # It is NOT a regular Python prop — loadStripe returns a Promise<Stripe>.
+    # The stripe prop is injected as a raw JS expression: a call to the memoised
+    # getStripePromise() helper defined via add_custom_code. It is NOT a regular
+    # Python prop — loadStripe returns a Promise<Stripe>. The call sits in the
+    # JSX, so Stripe.js is requested when <Elements> first renders, not when
+    # the page module is imported.
 
     # Options props (passed as `options` to Elements)
     # For deferred intent mode:
@@ -49,12 +59,15 @@ class StripeProvider(StripeBase):
     _publishable_key: str = ""
 
     def add_imports(self) -> rx.ImportDict:
-        return {"@stripe/stripe-js@10.0.0": ["loadStripe"]}
+        return {
+            "@stripe/stripe-js@10.0.0": [INSTALL_ONLY],
+            STRIPE_JS_PURE: [LOAD_STRIPE],
+        }
 
     def add_custom_code(self) -> list[str]:
         if not self._publishable_key:
             return []
-        return [f'const stripePromise = loadStripe("{self._publishable_key}");']
+        return [STRIPE_LOADER_JS]
 
     @classmethod
     def create(cls, *children, publishable_key: str = "", **props) -> "StripeProvider":
@@ -70,10 +83,10 @@ class StripeProvider(StripeBase):
         return component
 
     def _render(self, props=None):
-        """Override render to inject stripe={stripePromise} as raw JS reference."""
+        """Override render to inject stripe={getStripePromise(key)} as raw JS."""
         tag = super()._render(props)
         if self._publishable_key:
-            tag = tag.add_props(stripe=rx.Var("stripePromise"))
+            tag = tag.add_props(stripe=rx.Var(stripe_promise_js(self._publishable_key)))
         else:
             # Stripe Elements requires stripe prop — null is valid (deferred init)
             tag = tag.add_props(stripe=rx.Var("null"))

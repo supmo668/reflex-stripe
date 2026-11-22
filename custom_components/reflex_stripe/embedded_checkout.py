@@ -2,7 +2,14 @@
 
 import reflex as rx
 
-from .base import StripeBase
+from .base import (
+    INSTALL_ONLY,
+    LOAD_STRIPE,
+    STRIPE_JS_PURE,
+    STRIPE_LOADER_JS,
+    StripeBase,
+    stripe_promise_js,
+)
 
 
 class EmbeddedCheckoutProvider(rx.Component):
@@ -40,8 +47,10 @@ class EmbeddedCheckoutProvider(rx.Component):
          fetchClientSecret. When the reactive ``client_secret`` later
          populates, React re-renders and mounts the real checkout.
 
-    The Stripe instance (loadStripe) is injected via ``add_custom_code``,
-    same as the other bridges.
+    The Stripe instance comes from the memoised ``getStripePromise()``
+    helper (``add_custom_code``), same as the other bridges. It is called
+    AFTER the guard, so Stripe.js is not requested until there is a client
+    secret to render.
 
     See: https://docs.stripe.com/checkout/embedded/quickstart
     """
@@ -56,7 +65,8 @@ class EmbeddedCheckoutProvider(rx.Component):
 
     def add_imports(self) -> rx.ImportDict:
         return {
-            "@stripe/stripe-js@10.0.0": ["loadStripe"],
+            "@stripe/stripe-js@10.0.0": [INSTALL_ONLY],
+            STRIPE_JS_PURE: [LOAD_STRIPE],
             "@stripe/react-stripe-js@7.0.0": [
                 "EmbeddedCheckoutProvider",
                 "EmbeddedCheckout",
@@ -74,7 +84,7 @@ function GuardedEmbeddedCheckout({ clientSecret }) {
 """
             ]
         return [
-            f'const stripePromise = loadStripe("{self._publishable_key}");',
+            STRIPE_LOADER_JS,
             """
 function GuardedEmbeddedCheckout({ clientSecret }) {
   // GUARD: don't mount Stripe's EmbeddedCheckoutProvider until we have a
@@ -94,14 +104,14 @@ function GuardedEmbeddedCheckout({ clientSecret }) {
   }
   return (
     <EmbeddedCheckoutProvider
-      stripe={stripePromise}
+      stripe={__STRIPE_PROMISE__}
       options={{ clientSecret }}
     >
       <EmbeddedCheckout />
     </EmbeddedCheckoutProvider>
   );
 }
-""",
+""".replace("__STRIPE_PROMISE__", stripe_promise_js(self._publishable_key)),
         ]
 
     @classmethod
@@ -150,7 +160,7 @@ class EmbeddedCheckoutBridge(rx.Component):
     """JS bridge that handles the Embedded Checkout fetchClientSecret flow.
 
     Like ExpressCheckoutBridge, this is a custom React component that:
-    1. Initializes loadStripe with the publishable key
+    1. Loads Stripe.js with the publishable key on first render (memoised)
     2. Defines fetchClientSecret callback calling /api/stripe/create-checkout-session
     3. Renders <EmbeddedCheckoutProvider> + <EmbeddedCheckout> with the callback
     4. Dispatches onComplete to StripeState.handle_payment_success
@@ -173,7 +183,8 @@ class EmbeddedCheckoutBridge(rx.Component):
 
     def add_imports(self) -> rx.ImportDict:
         return {
-            "@stripe/stripe-js@10.0.0": ["loadStripe"],
+            "@stripe/stripe-js@10.0.0": [INSTALL_ONLY],
+            STRIPE_JS_PURE: [LOAD_STRIPE],
             "@stripe/react-stripe-js@7.0.0": [
                 "EmbeddedCheckoutProvider",
                 "EmbeddedCheckout",
@@ -198,8 +209,10 @@ function EmbeddedCheckoutBridge({ children, ...props }) {
 """
             ]
 
+        stripe_promise = stripe_promise_js(self._publishable_key)
+
         return [
-            f'const stripePromise = loadStripe("{self._publishable_key}");',
+            STRIPE_LOADER_JS,
             f"""
 function EmbeddedCheckoutBridge({{ children, ...props }}) {{
   const [ addEvents ] = useContext(EventLoopContext);
@@ -230,7 +243,7 @@ function EmbeddedCheckoutBridge({{ children, ...props }}) {{
 
   return (
     <EmbeddedCheckoutProvider
-      stripe={{stripePromise}}
+      stripe={{{stripe_promise}}}
       options={{{{ fetchClientSecret, onComplete }}}}
     >
       <EmbeddedCheckout />

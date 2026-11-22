@@ -62,7 +62,7 @@ See `.claude/PRPs/prds/reflex-stripe.prd.md` for full PRD.
 
 ## Architecture Notes
 
-- `loadStripe()` is async — handled via `add_custom_code` in StripeProvider
+- `loadStripe()` is imported from `@stripe/stripe-js/pure` and called lazily: `add_custom_code` emits a memoised `getStripePromise(key)` (see `base.py`) that components call at render — never a module-level `loadStripe(...)`
 - Express Checkout `onConfirm` needs multi-step JS flow → custom bridge component
 - Embedded Checkout uses `fetchClientSecret` callback → needs FastAPI endpoint
 - Config models use `PropsBase` dataclasses (like clerk-api's `Appearance`)
